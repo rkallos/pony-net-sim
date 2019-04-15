@@ -52,6 +52,7 @@ actor Simulator
     _waiting = nodes.size()
 
   be tock(id: NodeId, msgs: Array[NodeMsg val] iso) =>
+    queue_msgs(consume msgs)
     _waiting = _waiting - 1
     if (_waiting == 0) then
       if running then
@@ -67,9 +68,11 @@ actor Simulator
     end
 
   be send(msgs: Array[NodeMsg val] iso) =>
+    queue_msgs(consume msgs)
+
+  fun ref queue_msgs(msgs: Array[NodeMsg val] iso) =>
     let next_ts = (_tick + 1) * _tick_period
     for msg in (consume msgs).values() do
-      _log("sim(" + _tick.string() + "): queueing message for " + next_ts.string())
       // TODO: Add network defects
       _outbox.push(OutgoingNodeMsg(next_ts, msg))
     end

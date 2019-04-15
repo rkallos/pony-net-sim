@@ -6,7 +6,7 @@ trait Node
   be receive(at: U64, msg: NodeMsg val)
   be tick(at: U64)
 
-class NodeMsg
+class val NodeMsg
   let src: NodeId
   let dst: NodeId
   let msg: Any val
