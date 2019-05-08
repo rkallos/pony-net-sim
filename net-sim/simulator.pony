@@ -8,27 +8,29 @@ actor Simulator
   let _tick_period: U64 val
   let _events: Array[SimEvent val]
   let _outbox: MinHeap[OutgoingNodeMsg val] = MinHeap[OutgoingNodeMsg val](10)
+  let sim_time: SimTime
   let nodes: Map[NodeId, Node tag] = Map[NodeId, Node tag]
-  let stats: Stats tag
+  let stats: SimStats tag
 
   var _tick: U64 = 0
   var running: Bool = true
   var _waiting: USize = 0
 
   new create(tick_period: U64, env: Env, logger': Logger[String val],
-    events: Array[SimEvent val] iso)
+    events: Array[SimEvent val] iso, sim_time': SimTime)
   =>
     _env = env
     _tick_period = tick_period
+    sim_time = sim_time'
     logger = logger'
-    stats = Stats(logger)
+    stats = SimStats(logger)
 
     _events = consume events
     _events.reverse_in_place() // Use Array like a stack
     tick()
 
   be tick() =>
-    _log("sim: _tick=" + _tick.string())
+    //_log("sim: _tick=" + _tick.string())
     try
       process_events()?
     else

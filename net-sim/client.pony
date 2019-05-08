@@ -1,9 +1,9 @@
 actor Client is Node
   let _sim: Simulator
   let _name: String
-  let _stats: Stats
+  let _stats: SimStats
 
-  new create(sim: Simulator, name: String, stats: Stats) =>
+  new create(sim: Simulator, name: String, stats: SimStats) =>
     _sim = sim
     _name = name
     _stats = stats

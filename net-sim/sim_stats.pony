@@ -2,7 +2,7 @@ use "logger"
 use "collections"
 use "promises"
 
-actor Stats
+actor SimStats
   let logger: Logger[String val]
   let metrics: Array[(U64, Map[String, I64])] =
     Array[(U64, Map[String, I64])]
