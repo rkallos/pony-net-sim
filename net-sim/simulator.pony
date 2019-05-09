@@ -1,6 +1,7 @@
 use "collections"
 use "logger"
 use "promises"
+use "random"
 
 actor Simulator
   let _env: Env
@@ -15,6 +16,7 @@ actor Simulator
   var _tick: U64 = 0
   var running: Bool = true
   var _waiting: USize = 0
+  var rng: Random = Rand
 
   new create(tick_period: U64, env: Env, logger': Logger[String val],
     events: Array[SimEvent val] iso, sim_time': SimTime)
