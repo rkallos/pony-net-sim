@@ -11,6 +11,8 @@ actor Simulator
   let _outbox: MinHeap[OutgoingNodeMsg val] = MinHeap[OutgoingNodeMsg val](10)
   let sim_time: SimTime
   let nodes: Map[NodeId, Node tag] = Map[NodeId, Node tag]
+  let defects: Map[NodeId, Array[NetworkDefect]] =
+    Map[NodeId, Array[NetworkDefect]]
   let stats: SimStats tag
 
   var _tick: U64 = 0
