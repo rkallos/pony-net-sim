@@ -8,7 +8,7 @@ actor Simulator
   let logger: Logger[String val]
   let _tick_period: U64 val
   let _events: Array[SimEvent val]
-  let _outbox: MinHeap[OutgoingNodeMsg val] = MinHeap[OutgoingNodeMsg val](10)
+  let _outbox: MinHeap[OutgoingNodeMsg] = MinHeap[OutgoingNodeMsg](10)
   let sim_time: SimTime
   let nodes: Map[NodeId, Node tag] = Map[NodeId, Node tag]
   let defects: Map[NodeId, Array[NetworkDefect]] =
@@ -83,34 +83,17 @@ actor Simulator
     end
 
   fun ref _queue_msg(msg: NodeMsg val) =>
-    let next_ts = (_tick + 1) * _tick_period
-    let src: NodeId = msg.src
-    let src_defects = defects.get_or_else(src, [])
+    let out_msg = OutgoingNodeMsg((_tick + 1) * _tick_period, msg)
 
-    var delay: U64 = 0
-
-    for defect in src_defects.values() do
-      match defect.kind
-      | DelaySend =>
-        delay = delay + defect.amt
-      end
+    for defect in defects.get_or_else(msg.src, []).values() do
+      defect(out_msg, this)
     end
 
-    let dst: NodeId = msg.dst
-    let dst_defects = defects.get_or_else(dst, [])
-
-    for defect in dst_defects.values() do
-      match defect.kind
-      | DelayRecv =>
-        delay = delay + defect.amt
-      | DropFrom =>
-        if defect.node == src then
-          return
-        end
-      end
+    for defect in defects.get_or_else(msg.dst, []).values() do
+      defect(out_msg, this)
     end
 
-    _outbox.push(OutgoingNodeMsg(next_ts + delay, msg))
+    if not out_msg.drop then _outbox.push(out_msg) end
 
   be log(msg: String, node: String = "sim") =>
     let str = recover

@@ -28,3 +28,15 @@ class val NetworkDefect
     kind = DropFrom
     amt = 0
     node = src
+
+  fun apply(msg: OutgoingNodeMsg ref, sim: Simulator ref) =>
+    match kind
+    | DelaySend =>
+      msg.ts = msg.ts + amt
+    | DelayRecv =>
+      msg.ts = msg.ts + amt
+    | DropFrom =>
+      if msg.msg.dst == node then
+        msg.drop = true
+      end
+    end

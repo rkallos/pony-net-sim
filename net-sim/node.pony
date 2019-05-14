@@ -17,10 +17,11 @@ class val NodeMsg
     msg = msg'
 
 class OutgoingNodeMsg is Comparable[OutgoingNodeMsg box]
-  let ts: U64
+  var ts: U64
   let msg: NodeMsg val
+  var drop: Bool = false
 
-  new val create(ts': U64, msg': NodeMsg val) =>
+  new create(ts': U64, msg': NodeMsg val) =>
     ts = ts'
     msg = msg'
 
