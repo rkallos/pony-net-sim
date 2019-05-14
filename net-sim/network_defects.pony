@@ -3,26 +3,28 @@ primitive DelayRecv
 primitive DropType
 primitive DropFrom
 
-type NetworkDefectKind is
-( (DelaySend, U64)
-| (DelayRecv, U64)
-| (DropFrom, NodeId)
+type _NetworkDefectKind is
+( DelaySend
+| DelayRecv
+| DropFrom
 )
 
 class val NetworkDefect
-  var kind: (DelaySend | DelayRecv | DropFrom) = DropFrom
-  var amt: U64 = 0
-  var node: NodeId = ""
+  let kind: _NetworkDefectKind
+  let amt: U64
+  let node: NodeId
 
-  new val create(defect: NetworkDefectKind) =>
-    match defect
-    | (DelaySend, let t: U64) =>
-      kind = DelaySend
-      amt = t
-    | (DelayRecv, let t: U64) =>
-      kind = DelayRecv
-      amt = t
-    | (DropFrom, let n: NodeId) =>
-      kind = DropFrom
-      node = n
-    end
+  new val delay_send(amt': U64, dst: NodeId) =>
+    kind = DelaySend
+    amt = amt'
+    node = dst
+
+  new val delay_recv(amt': U64, src: NodeId) =>
+    kind = DelayRecv
+    amt = amt'
+    node = src
+
+  new val drop_from(src: NodeId) =>
+    kind = DropFrom
+    amt = 0
+    node = src
