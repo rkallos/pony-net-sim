@@ -6,14 +6,16 @@ actor SimStats
   let logger: Logger[String val]
   let metrics: Array[(U64, Map[String, I64])] =
     Array[(U64, Map[String, I64])]
+  let _tick_period: U64
   var cur: Map[String, I64] = Map[String, I64]
   var _at: U64 = 0
 
-  new create(logger': Logger[String val]) =>
+  new create(tick_period: U64, logger': Logger[String val]) =>
+    _tick_period = tick_period
     logger = logger'
 
   be tick(at: U64) =>
-    let old_at = _at = at
+    let old_at = _at = (at * _tick_period)
     metrics.push((old_at, cur))
     cur = cur.clone()
 
@@ -24,6 +26,7 @@ actor SimStats
     try cur.upsert(name, value, {(prev, delta) => prev + delta})? end
 
   be to_string(p: Promise[String val]) =>
+    // TODO: Sort keys for dat determinism
     let keys = Array[String](cur.size() + 1)
     for key in cur.keys() do
         keys.push(key)

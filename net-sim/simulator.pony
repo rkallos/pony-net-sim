@@ -27,7 +27,7 @@ actor Simulator
     _tick_period = tick_period
     sim_time = sim_time'
     logger = logger'
-    stats = SimStats(logger)
+    stats = SimStats(_tick_period, logger)
 
     _events = consume events
     _events.reverse_in_place() // Use Array like a stack
