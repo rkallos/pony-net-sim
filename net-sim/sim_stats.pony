@@ -26,11 +26,11 @@ actor SimStats
     try cur.upsert(name, value, {(prev, delta) => prev + delta})? end
 
   be to_string(p: Promise[String val]) =>
-    // TODO: Sort keys for dat determinism
     let keys = Array[String](cur.size() + 1)
     for key in cur.keys() do
         keys.push(key)
     end
+    Sort[Array[String], String](keys)
 
     let out: String iso = recover String end
     out.append("time\t")
