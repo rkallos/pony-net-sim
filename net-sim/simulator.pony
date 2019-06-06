@@ -13,6 +13,7 @@ actor Simulator
   let nodes: Map[NodeId, Node tag] = Map[NodeId, Node tag]
   let defects: Map[NodeId, Array[NetworkDefect]] =
     Map[NodeId, Array[NetworkDefect]]
+  let reports: Array[SimReport val] val
   let stats: SimStats tag
 
   var _tick: U64 = 0
@@ -21,12 +22,14 @@ actor Simulator
   var rng: Random = Rand
 
   new create(tick_period: U64, env: Env, logger': Logger[String val],
-    events: Array[SimEvent val] iso, sim_time': SimTime)
+    events: Array[SimEvent val] iso, sim_time': SimTime,
+    reports': Array[SimReport val] val = [])
   =>
     _env = env
     _tick_period = tick_period
     sim_time = sim_time'
     logger = logger'
+    reports = reports'
     stats = SimStats(_tick_period, logger)
 
     _events = consume events
@@ -67,9 +70,15 @@ actor Simulator
       else
         let now = _tick * _tick_period
         stats.tick(now)
-        let p = Promise[String val]
-        p.next[None]({(s: String val)(_env) => _env.out.write(s)})
-        stats.to_string(p)
+        if reports.size() > 0 then
+          let p = Promise[Array[Map[String, I64] val] val]
+          p.next[None]({(s)(sim: Simulator tag = this) => sim._gen_reports(s)})
+          stats.stats(p)
+        else
+          let p = Promise[String val]
+          p.next[None]({(s: String val)(_env) => _env.out.write(s)})
+          stats.to_string(p)
+        end
       end
     end
 
@@ -93,7 +102,11 @@ actor Simulator
       defect(out_msg, this)
     end
 
-    if not out_msg.drop then _outbox.push(out_msg) end
+    if out_msg.drop then
+      return
+    else
+      _outbox.push(out_msg)
+    end
 
   be log(msg: String, node: String = "sim") =>
     let str = recover
@@ -114,6 +127,32 @@ actor Simulator
         return
       end
     end
+
+  be _gen_reports(data: Array[Map[String, I64] val] val) =>
+    let out: String iso = recover String end
+
+    for report in reports.values() do
+      let keys: Array[String] = report.keys(this)
+      for k in keys.values() do
+        out.append(k)
+        out.push('\t')
+      end
+      try out.>pop()?.>push('\n') end
+      for map in data.values() do
+        for k in keys.values() do
+          if map.contains(k) then
+            try out.append(map(k)?.string()) end
+          else
+            out.push('0')
+          end
+          out.push('\t')
+        end
+        try out.>pop()?.>push('\n') end
+      end
+      out.append(report(this))
+    end
+
+    _env.out.print(consume out)
 
   fun _log(msg: String): Bool =>
     logger.log(msg)

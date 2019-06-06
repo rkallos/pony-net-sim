@@ -4,7 +4,7 @@ use "promises"
 
 actor SimStats
   let logger: Logger[String val]
-  let metrics: Array[(U64, Map[String, I64])] =
+  var metrics: Array[(U64, Map[String, I64])] =
     Array[(U64, Map[String, I64])]
   let _tick_period: U64
   var cur: Map[String, I64] = Map[String, I64]
@@ -54,4 +54,25 @@ actor SimStats
       end
       try out.>pop()?.>push('\n') end
     end
+    p(consume out)
+
+  be stats(p: Promise[Array[Map[String, I64] val] val]) =>
+    let size = metrics.size()
+    let out: Array[Map[String, I64] val] iso = recover
+      Array[Map[String, I64] val](size)
+    end
+
+    for pair in metrics.values() do
+      (let ts: U64, let map: Map[String, I64]) = pair
+      let immutable_map: Map[String, I64] iso = recover Map[String, I64] end
+      immutable_map("time") = ts.i64()
+
+      for kv in map.pairs() do
+        (let k: String, let v: I64) = kv
+        immutable_map(k) = v
+      end
+
+      out.push(consume immutable_map)
+    end
+
     p(consume out)

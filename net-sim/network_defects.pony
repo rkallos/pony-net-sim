@@ -25,10 +25,10 @@ class val NetworkDefect
     amt = amt'
     node = src
 
-  new val drop_send(amt': U64, src: NodeId) =>
+  new val drop_send(amt': U64) =>
     kind = DropSend
     amt = amt'
-    node = src
+    node = ""
 
   new val drop_from(src: NodeId) =>
     kind = DropFrom
@@ -38,15 +38,19 @@ class val NetworkDefect
   fun apply(msg: OutgoingNodeMsg ref, sim: Simulator ref) =>
     match kind
     | DelaySend =>
-      msg.ts = msg.ts + amt
+      if msg.msg.dst.contains(node) then
+        msg.ts = msg.ts + amt
+      end
     | DelayRecv =>
-      msg.ts = msg.ts + amt
+      if msg.msg.src.contains(node) then
+        msg.ts = msg.ts + amt
+      end
     | DropSend =>
       if (sim.rng.next() % 100) >= amt then
         msg.drop = true
       end
     | DropFrom =>
-      if msg.msg.dst == node then
+      if msg.msg.dst.contains(node) then
         msg.drop = true
       end
     end
