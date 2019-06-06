@@ -1,4 +1,5 @@
 use "collections"
+use "files"
 use "logger"
 use "promises"
 use "random"
@@ -15,6 +16,7 @@ actor Simulator
     Map[NodeId, Array[NetworkDefect]]
   let reports: Array[SimReport val] val
   let stats: SimStats tag
+  let _out_dir: (FilePath | None)
 
   var _tick: U64 = 0
   var running: Bool = true
@@ -23,7 +25,8 @@ actor Simulator
 
   new create(tick_period: U64, env: Env, logger': Logger[String val],
     events: Array[SimEvent val] iso, sim_time': SimTime,
-    reports': Array[SimReport val] val = [])
+    reports': Array[SimReport val] val = [],
+    out_dir: (FilePath | None) = None)
   =>
     _env = env
     _tick_period = tick_period
@@ -31,6 +34,10 @@ actor Simulator
     logger = logger'
     reports = reports'
     stats = SimStats(_tick_period, logger)
+    _out_dir = match out_dir
+    | let f: FilePath => f
+    | None => None
+    end
 
     _events = consume events
     _events.reverse_in_place() // Use Array like a stack
@@ -129,9 +136,9 @@ actor Simulator
     end
 
   be _gen_reports(data: Array[Map[String, I64] val] val) =>
-    let out: String iso = recover String end
-
     for report in reports.values() do
+      let out: String iso = recover String end
+
       let keys: Array[String] = report.keys(this)
       for k in keys.values() do
         out.append(k)
@@ -150,9 +157,37 @@ actor Simulator
         try out.>pop()?.>push('\n') end
       end
       out.append(report(this))
+
+      let out_final: String val = consume out
+
+      try
+        let report_dir_path: FilePath =
+          FilePath(_out_dir as FilePath, report.name())?
+        if not report_dir_path.mkdir() then
+          _log("unable to create report dir")
+          error
+        end
+
+        let report_file_path: FilePath =
+          FilePath(report_dir_path, "out.tsv")?
+        let report_file: File = File(report_file_path)
+        match report_file.errno()
+        | FileOK =>
+          report_file.write(out_final)
+        else
+          _log("unable to open file for writing")
+          error
+        end
+      else
+        match _out_dir
+        | let p: FilePath =>
+          _log("falling back to stdout")
+        end
+        _env.out.print(out_final)
+      end
     end
 
-    _env.out.print(consume out)
+
 
   fun _log(msg: String): Bool =>
     logger.log(msg)
