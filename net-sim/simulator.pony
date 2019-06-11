@@ -49,18 +49,18 @@ actor Simulator
       logger(Error) and _log("sim: error processing events")
     end
 
-    let now = sim_time(_tick)
-    if (now > 0) then stats.tick(now) end
+    let now_ms = sim_time(_tick)
+    if (now_ms > 0) then stats.tick(now_ms) end
 
     try
-      while _outbox.peek()?.ts <= now do
+      while _outbox.peek()?.ts <= now_ms do
         let msg = _outbox.pop()?.msg
-        nodes(msg.dst)?.receive(now, msg)
+        nodes(msg.dst)?.receive(now_ms, msg)
       end
     end
 
     for node in nodes.values() do
-      node.tick(now)
+      node.tick(now_ms)
     end
 
     _waiting = nodes.size()
@@ -73,8 +73,8 @@ actor Simulator
         _tick = _tick + 1
         tick()
       else
-        let now = sim_time(_tick)
-        stats.tick(now)
+        let now_ms = sim_time(_tick)
+        stats.tick(now_ms)
         if reports.size() > 0 then
           let p = Promise[Array[Map[String, I64] val] val]
           p.next[None]({(s)(sim: Simulator tag = this) => sim._gen_reports(s)})
