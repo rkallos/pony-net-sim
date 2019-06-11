@@ -124,8 +124,7 @@ actor Simulator
 
   fun ref process_events()? =>
     while _events.size() > 0 do
-      let now: U64 = sim_time(_tick)
-      if _events(_events.size() - 1)?.ts() <= now then
+      if _events(_events.size() - 1)?.ts() <= _tick then
         let event = _events.pop()?
         event(this)?
       else
