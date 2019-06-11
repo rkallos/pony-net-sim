@@ -7,7 +7,6 @@ use "random"
 actor Simulator
   let _env: Env
   let logger: Logger[String val]
-  let _tick_period: U64 val
   let _events: Array[SimEvent val]
   let _outbox: MinHeap[OutgoingNodeMsg] = MinHeap[OutgoingNodeMsg](10)
   let sim_time: SimTime
@@ -23,17 +22,16 @@ actor Simulator
   var _waiting: USize = 0
   var rng: Random = Rand
 
-  new create(tick_period: U64, env: Env, logger': Logger[String val],
-    events: Array[SimEvent val] iso, sim_time': SimTime,
+  new create(env: Env, logger': Logger[String val],
+    events: Array[SimEvent val] iso, time': SimTime,
     reports': Array[SimReport val] val = [],
     out_dir: (FilePath | None) = None)
   =>
     _env = env
-    _tick_period = tick_period
-    sim_time = sim_time'
+    sim_time = time'
     logger = logger'
     reports = reports'
-    stats = SimStats(_tick_period, logger)
+    stats = SimStats(logger)
     _out_dir = match out_dir
     | let f: FilePath => f
     | None => None
@@ -51,7 +49,7 @@ actor Simulator
       logger(Error) and _log("sim: error processing events")
     end
 
-    let now = _tick * _tick_period
+    let now = sim_time(_tick)
     if (now > 0) then stats.tick(now) end
 
     try
@@ -75,7 +73,7 @@ actor Simulator
         _tick = _tick + 1
         tick()
       else
-        let now = _tick * _tick_period
+        let now = sim_time(_tick)
         stats.tick(now)
         if reports.size() > 0 then
           let p = Promise[Array[Map[String, I64] val] val]
@@ -99,7 +97,7 @@ actor Simulator
     end
 
   fun ref _queue_msg(msg: NodeMsg val) =>
-    let out_msg = OutgoingNodeMsg((_tick + 1) * _tick_period, msg)
+    let out_msg = OutgoingNodeMsg(sim_time(_tick + 1), msg)
 
     for defect in defects.get_or_else(msg.src, []).values() do
       defect(out_msg, this)
@@ -126,8 +124,8 @@ actor Simulator
 
   fun ref process_events()? =>
     while _events.size() > 0 do
-      let now_ts: U64 = _tick * _tick_period
-      if _events(_events.size() - 1)?.ts() <= now_ts then
+      let now: U64 = sim_time(_tick)
+      if _events(_events.size() - 1)?.ts() <= now then
         let event = _events.pop()?
         event(this)?
       else
@@ -174,6 +172,8 @@ actor Simulator
         match report_file.errno()
         | FileOK =>
           report_file.write(out_final)
+          report_file.set_length(report_file.position())
+          report_file.dispose()
         else
           _log("unable to open file for writing")
           error

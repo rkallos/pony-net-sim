@@ -6,16 +6,14 @@ actor SimStats
   let logger: Logger[String val]
   var metrics: Array[(U64, Map[String, I64])] =
     Array[(U64, Map[String, I64])]
-  let _tick_period: U64
   var cur: Map[String, I64] = Map[String, I64]
   var _at: U64 = 0
 
-  new create(tick_period: U64, logger': Logger[String val]) =>
-    _tick_period = tick_period
+  new create(logger': Logger[String val]) =>
     logger = logger'
 
   be tick(at: U64) =>
-    let old_at = _at = (at * _tick_period)
+    let old_at = _at = at
     metrics.push((old_at, cur))
     cur = cur.clone()
 

@@ -4,6 +4,9 @@ class val SimTime
   new val create(period': U64) =>
     period = period'
 
+  fun apply(tick: U64): U64 =>
+    tick * period
+
   fun mins(n: U64): U64 =>
     ((n * 60) * 1000) / period
 
