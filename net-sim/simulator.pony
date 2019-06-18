@@ -9,7 +9,7 @@ actor Simulator
   let logger: Logger[String val]
   let _events: Array[SimEvent val]
   let _outbox: MinHeap[OutgoingNodeMsg] = MinHeap[OutgoingNodeMsg](10)
-  let sim_time: SimTime
+  let period: U64
   let nodes: Map[NodeId, Node tag] = Map[NodeId, Node tag]
   let defects: Map[NodeId, Array[NetworkDefect]] =
     Map[NodeId, Array[NetworkDefect]]
@@ -23,12 +23,12 @@ actor Simulator
   var rng: Random = Rand
 
   new create(env: Env, logger': Logger[String val],
-    events: Array[SimEvent val] iso, time': SimTime,
+    events: Array[SimEvent val] iso, period': U64,
     reports': Array[SimReport val] val = [],
     out_dir: (FilePath | None) = None)
   =>
     _env = env
-    sim_time = time'
+    period = period'
     logger = logger'
     reports = reports'
     stats = SimStats(logger)
@@ -49,7 +49,7 @@ actor Simulator
       logger(Error) and _log("sim: error processing events")
     end
 
-    let now_ms = sim_time(_tick)
+    let now_ms = _now_ms()
     if (now_ms > 0) then stats.tick(now_ms) end
 
     try
@@ -73,7 +73,7 @@ actor Simulator
         _tick = _tick + 1
         tick()
       else
-        let now_ms = sim_time(_tick)
+        let now_ms = _now_ms()
         stats.tick(now_ms)
         if reports.size() > 0 then
           let p = Promise[Array[Map[String, I64] val] val]
@@ -97,7 +97,7 @@ actor Simulator
     end
 
   fun ref _queue_msg(msg: NodeMsg val) =>
-    let out_msg = OutgoingNodeMsg(sim_time(_tick + 1), msg)
+    let out_msg = OutgoingNodeMsg(_ms(_tick + 1), msg)
 
     for defect in defects.get_or_else(msg.src, []).values() do
       defect(out_msg, this)
@@ -123,8 +123,9 @@ actor Simulator
     _log(consume str)
 
   fun ref process_events()? =>
+    let now_ms = _now_ms()
     while _events.size() > 0 do
-      if _events(_events.size() - 1)?.ts() <= _tick then
+      if _events(_events.size() - 1)?.ts() <= now_ms then
         let event = _events.pop()?
         event(this)?
       else
@@ -186,7 +187,11 @@ actor Simulator
       end
     end
 
+  fun _now_ms(): U64 =>
+    _ms(_tick)
 
+  fun _ms(t: U64): U64 =>
+    t * period
 
   fun _log(msg: String): Bool =>
     logger.log(msg)

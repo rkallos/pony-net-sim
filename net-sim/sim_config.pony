@@ -8,12 +8,10 @@ class val SimConfig
   let sim: Simulator tag
   let logger: Logger[String val]
   let stats: SimStats
-  let time: SimTime
 
   new val create(sim': Simulator tag, logger': Logger[String val],
-    stats': SimStats, time': SimTime)
+    stats': SimStats)
   =>
   sim = sim'
   logger = logger'
   stats = stats'
-  time = time'

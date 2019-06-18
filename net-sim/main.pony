@@ -61,6 +61,4 @@ actor Main
     ]
     end
 
-    let sim_time = SimTime(tick_period)
-
-    let s = Simulator(env, logger, consume events, sim_time)
+    let s = Simulator(env, logger, consume events, tick_period)
