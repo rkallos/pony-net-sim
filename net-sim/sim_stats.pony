@@ -21,7 +21,7 @@ actor SimStats
     cur(name) = value
 
   be counter_inc(name: String, value: I64) =>
-    try cur.upsert(name, value, {(prev, delta) => prev + delta})? end
+    cur.upsert(name, value, {(prev, delta) => prev + delta})
 
   be to_string(p: Promise[String val]) =>
     let keys = Array[String](cur.size() + 1)
